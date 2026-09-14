@@ -19,13 +19,10 @@ class SimpleSelfAttention(nn.Module):
             context_vectors: Tensor of shape (num_tokens, embedding_dim)
             attention_weights: Tensor of shape (num_tokens, num_tokens)
         """
-        # Each row i contains dot products between token i and every token j.
         attention_scores = x @ x.T
 
-        # Normalize across tokens being attended to.
         attention_weights = torch.softmax(attention_scores, dim=-1)
 
-        # Weighted sum of the original token vectors.
         context_vectors = attention_weights @ x
 
         return context_vectors, attention_weights
@@ -55,8 +52,6 @@ class SelfAttention(nn.Module):
         queries = self.query(x)
         keys = self.key(x)
         values = self.value(x)
-
-        # Scale by sqrt(key/query dimension) before softmax.
         attention_scores = (queries @ keys.T) / math.sqrt(keys.shape[-1])
         attention_weights = torch.softmax(attention_scores, dim=-1)
         context_vectors = attention_weights @ values
@@ -86,7 +81,7 @@ class CausalAttention(nn.Module):
 
         self.register_buffer(
             "mask",
-            torch.triu(torch.ones(context_length, context_length), diagonal=1),
+            torch.triu(torch.ones(context_length, context_length), diagonal=1)
         )
 
     def forward(self, x):
@@ -103,12 +98,10 @@ class CausalAttention(nn.Module):
         queries = self.query(x)
         values = self.value(x)
 
-        # Shape: (batch_size, num_tokens, num_tokens)
         attention_scores = (queries @ keys.transpose(-2, -1)) / math.sqrt(
             keys.shape[-1]
         )
 
-        # Set all future-token scores to negative infinity before softmax.
         causal_mask = self.mask[:num_tokens, :num_tokens].bool()
         attention_scores = attention_scores.masked_fill(causal_mask, float("-inf"))
 
