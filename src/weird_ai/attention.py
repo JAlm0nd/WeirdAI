@@ -1,3 +1,4 @@
+import math
 import torch
 import torch.nn as nn
 
@@ -18,13 +19,14 @@ class SimpleSelfAttention(nn.Module):
             context_vectors: Tensor of shape (num_tokens, embedding_dim)
             attention_weights: Tensor of shape (num_tokens, num_tokens)
         """
+        attention_scores = x @ x.T
 
-        # TODO:
-        # 1. Compute attention scores using matrix multiplication.
-        # 2. Normalize scores with softmax.
-        # 3. Compute context vectors as weighted sums of input vectors.
+        attention_weights = torch.softmax(attention_scores, dim=-1)
 
-        raise NotImplementedError("Implement simple self-attention.")
+        context_vectors = attention_weights @ x
+
+        return context_vectors, attention_weights
+
 
 class SelfAttention(nn.Module):
     """
@@ -47,21 +49,29 @@ class SelfAttention(nn.Module):
             context_vectors: Tensor of shape (num_tokens, output_dim)
             attention_weights: Tensor of shape (num_tokens, num_tokens)
         """
+        queries = self.query(x)
+        keys = self.key(x)
+        values = self.value(x)
+        attention_scores = (queries @ keys.T) / math.sqrt(keys.shape[-1])
+        attention_weights = torch.softmax(attention_scores, dim=-1)
+        context_vectors = attention_weights @ values
 
-        # TODO:
-        # 1. Compute queries, keys, and values.
-        # 2. Compute scaled attention scores.
-        # 3. Apply softmax.
-        # 4. Compute context vectors.
+        return context_vectors, attention_weights
 
-        raise NotImplementedError("Implement trainable self-attention.")
 
 class CausalAttention(nn.Module):
     """
     Self-attention with a causal mask so tokens cannot attend to future tokens.
     """
 
-    def __init__(self, embedding_dim, output_dim, context_length, dropout=0.0, qkv_bias=False):
+    def __init__(
+        self,
+        embedding_dim,
+        output_dim,
+        context_length,
+        dropout=0.0,
+        qkv_bias=False,
+    ):
         super().__init__()
 
         self.query = nn.Linear(embedding_dim, output_dim, bias=qkv_bias)
@@ -82,13 +92,21 @@ class CausalAttention(nn.Module):
         Returns:
             context_vectors: Tensor of shape (batch_size, num_tokens, output_dim)
         """
+        _, num_tokens, _ = x.shape
 
-        # TODO:
-        # 1. Compute keys, queries, and values.
-        # 2. Compute scaled attention scores.
-        # 3. Mask future tokens.
-        # 4. Apply softmax.
-        # 5. Apply dropout.
-        # 6. Compute context vectors.
+        keys = self.key(x)
+        queries = self.query(x)
+        values = self.value(x)
 
-        raise NotImplementedError("Implement causal attention.")
+        attention_scores = (queries @ keys.transpose(-2, -1)) / math.sqrt(
+            keys.shape[-1]
+        )
+
+        causal_mask = self.mask[:num_tokens, :num_tokens].bool()
+        attention_scores = attention_scores.masked_fill(causal_mask, float("-inf"))
+
+        attention_weights = torch.softmax(attention_scores, dim=-1)
+        attention_weights = self.dropout(attention_weights)
+
+        context_vectors = attention_weights @ values
+        return context_vectors

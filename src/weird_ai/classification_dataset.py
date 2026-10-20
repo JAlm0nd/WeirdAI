@@ -40,7 +40,7 @@ class LyricsClassificationDataset(Dataset):
         text_column="text",
         label_column="label",
         max_length=None,
-        pad_token_id=0
+        pad_token_id=0,
     ):
         self.dataframe = dataframe.reset_index(drop=True)
         self.tokenizer = tokenizer
@@ -58,19 +58,16 @@ class LyricsClassificationDataset(Dataset):
         else:
             self.max_length = max_length
 
-        # TODO:
-        # Truncate every encoded text to self.max_length.
-
+        # Truncate every sequence to the fixed maximum length.
         self.encoded_texts = [
-            None  # TODO: replace this line
+            encoded_text[:self.max_length]
             for encoded_text in self.encoded_texts
         ]
 
-        # TODO:
-        # Pad every encoded text so it has exactly self.max_length tokens.
-
+        # Pad every sequence to exactly self.max_length tokens.
         self.encoded_texts = [
-            None  # TODO: replace this line
+            encoded_text
+            + [self.pad_token_id] * (self.max_length - len(encoded_text))
             for encoded_text in self.encoded_texts
         ]
 
@@ -91,7 +88,7 @@ class LyricsClassificationDataset(Dataset):
 
         return (
             torch.tensor(encoded, dtype=torch.long),
-            torch.tensor(label, dtype=torch.long)
+            torch.tensor(label, dtype=torch.long),
         )
 
     def __len__(self):
