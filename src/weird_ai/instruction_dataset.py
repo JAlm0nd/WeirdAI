@@ -2,6 +2,7 @@
 Instruction dataset utilities for Weird AI.
 """
 
+
 from torch.utils.data import Dataset
 
 from weird_ai.instruction_data import format_full_example
@@ -11,7 +12,8 @@ class InstructionDataset(Dataset):
     """
     Dataset for supervised instruction fine-tuning.
 
-    Each item is a list of token IDs representing a full formatted instruction-response example.
+    Each item is a list of token IDs representing a full formatted
+    instruction-response example.
     """
 
     def __init__(self, data, tokenizer):
@@ -21,12 +23,8 @@ class InstructionDataset(Dataset):
 
         for entry in data:
             full_text = format_full_example(entry)
-
-            # TODO:
-            # Encode full_text using tokenizer.encode(...)
-            # Append the encoded token IDs to self.encoded_texts.
-
-            raise NotImplementedError("Encode each formatted example.")
+            token_ids = tokenizer.encode(full_text)
+            self.encoded_texts.append(token_ids)
 
     def __getitem__(self, index):
         return self.encoded_texts[index]
